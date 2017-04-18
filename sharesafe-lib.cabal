@@ -1,0 +1,60 @@
+name:                sharesafe-lib
+version:             0.1
+synopsis:            Common library for ShareSafe: secret sharing and more.
+homepage:            https://github.com/primetype/sharesafe-lib#readme
+license:             BSD3
+license-file:        LICENSE
+author:              Nicolas Di Prima
+maintainer:          nicolas@primetype.co.uk
+copyright:           Secret Prime Ltd <info@primetype.co.uk>
+category:            Crypto
+build-type:          Simple
+extra-source-files:  README.md
+cabal-version:       >=1.10
+
+library
+  hs-source-dirs:      src
+  exposed-modules:     Prime.Common.Base
+                       Prime.Common.JSON
+                       Prime.Common.Persistent
+                       Prime.Common.Time
+
+  exposed-modules:     Prime.Secret
+  other-modules:       Prime.Secret.Keys
+                       Prime.Secret.Cipher
+                       Prime.Secret.Client
+                       Prime.Secret.Password
+                       Prime.Secret.Signing
+  exposed-modules:     Prime.Servant.Session
+                       Prime.Servant.PrimeApi
+                       Prime.Servant.Client
+                       Prime.Servant.Api
+                       Prime.Servant.Monad
+                       Prime.Servant.Models
+  other-modules:       Prime.Servant.PrimeApi.Enroll
+                       Prime.Servant.PrimeApi.Login
+                       Prime.Servant.PrimeApi.Sharing
+  build-depends:       foundation, base
+                     , memory, bytestring, binary, text
+                     , cryptonite
+                     , pvss
+                     , hourglass, time
+                     , filepath, directory
+                     , persistent, persistent-template
+                     , aeson
+                     , esqueleto
+                     , exceptions, mtl
+                     , servant-auth-cookie, servant, servant-server, servant-client
+                     , data-default
+                     , wai, http-types
+  default-language:    Haskell2010
+  ghc-options:         -Wall -fwarn-tabs
+  Default-Extensions:  NoImplicitPrelude
+                       MultiParamTypeClasses
+                       FlexibleContexts
+                       FlexibleInstances
+                       TypeFamilies
+
+source-repository head
+  type:     git
+  location: https://github.com/primetype/sharesafe-lib

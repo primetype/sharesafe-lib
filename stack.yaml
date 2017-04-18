@@ -1,0 +1,10 @@
+resolver: lts-8.11
+packages:
+- '.'
+- location:
+    git: https://github.com/NicolasDP/servant-auth-cookie
+    commit: 1210db5db1c551b51eb9085d561bbb76e173c80b
+  extra-dep: true
+extra-deps: [foundation-0.0.7, pvss-0.1, cryptonite-0.22]
+flags: {}
+extra-package-dbs: []
