@@ -3,8 +3,12 @@ packages:
 - '.'
 - location:
     git: https://github.com/NicolasDP/servant-auth-cookie
-    commit: 1210db5db1c551b51eb9085d561bbb76e173c80b
+    commit: 31c3d5d0afa8ae8ae02b17f4a0cb824a5b486b93
   extra-dep: true
-extra-deps: [foundation-0.0.7, pvss-0.1, cryptonite-0.22]
+- location:
+    git: https://github.com/haskell-foundation/foundation
+    commit: 8ee5415b28935d31f311fd4696a472f10c4fe11a
+  extra-dep: true
+extra-deps: [pvss-0.1, cryptonite-0.23, memory-0.14.5]
 flags: {}
 extra-package-dbs: []
