@@ -14,6 +14,7 @@ module Prime.Common.JSON
     , (.=)
     , binToValue, binFromValue
     , baToValue, baFromValue
+    , baToValue64, baFromValue64
     ) where
 
 import Prime.Common.Base
@@ -34,6 +35,14 @@ baFromValue :: ByteArray ba => Value -> Parser ba
 baFromValue v = do
     bs <- T.encodeUtf8 <$> parseJSON v
     either fail return $ B.convertFromBase B.Base16 bs
+
+baToValue64 :: ByteArrayAccess ba => ba -> Value
+baToValue64 = String . T.decodeUtf8 . B.convertToBase B.Base64
+
+baFromValue64 :: ByteArray ba => Value -> Parser ba
+baFromValue64 v = do
+    bs <- T.encodeUtf8 <$> parseJSON v
+    either fail return $ B.convertFromBase B.Base64 bs
 
 binToValue :: Binary a => a -> Value
 binToValue = String . T.decodeUtf8 . binToBase16'

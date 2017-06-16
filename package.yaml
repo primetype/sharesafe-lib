@@ -1,0 +1,55 @@
+name: sharesafe-lib
+version: 0.0.1
+synopsis: Secret Sharing (using PVSS made simple)
+description: See README at <https://github.com/primetype/sharesafe-lib#readme>
+maintainer: Nicolas Di Prima <nicolas@primetype.co.uk>
+license: BSD3
+github: primetype/sharesafe-lib
+category: Crypto
+extra-source-files:
+  - CHANGELOG.md
+  - README.md
+  - LICENSE
+
+ghc-options: -Wall
+
+dependencies:
+  - foundation
+  - memory
+  - bytestring
+  - binary
+  - base
+  - cryptonite
+  - pvss
+  - hourglass
+  - aeson
+  - text
+  - persistent
+  - pem
+
+default-extensions:
+    - NoImplicitPrelude
+    - TypeFamilies
+    - DataKinds
+
+library:
+  source-dirs: src
+  exposed-modules:
+    - Prime.Common.Base
+    - Prime.Common.JSON
+    - Prime.Common.Persistent
+    - Prime.Common.Time
+    - Prime.Common.PEM
+    - Prime.Secret
+
+executables:
+  sharesafe:
+    main: Main.hs
+    source-dirs: app
+    dependencies:
+      - sharesafe-lib
+      - haskeline
+      - directory
+      - filepath
+      - optparse-applicative
+      - zlib

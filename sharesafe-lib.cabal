@@ -1,60 +1,89 @@
+-- This file has been generated from package.yaml by hpack version 0.17.0.
+--
+-- see: https://github.com/sol/hpack
+
 name:                sharesafe-lib
-version:             0.1
-synopsis:            Common library for ShareSafe: secret sharing and more.
+version:             0.0.1
+synopsis:            Secret Sharing (using PVSS made simple)
+description:         See README at <https://github.com/primetype/sharesafe-lib#readme>
 homepage:            https://github.com/primetype/sharesafe-lib#readme
+bug-reports:         https://github.com/primetype/sharesafe-lib/issues
 license:             BSD3
 license-file:        LICENSE
-author:              Nicolas Di Prima
-maintainer:          nicolas@primetype.co.uk
-copyright:           Secret Prime Ltd <info@primetype.co.uk>
+maintainer:          Nicolas Di Prima <nicolas@primetype.co.uk>
 category:            Crypto
 build-type:          Simple
-extra-source-files:  README.md
-cabal-version:       >=1.10
+cabal-version:       >= 1.10
 
-library
-  hs-source-dirs:      src
-  exposed-modules:     Prime.Common.Base
-                       Prime.Common.JSON
-                       Prime.Common.Persistent
-                       Prime.Common.Time
-
-  exposed-modules:     Prime.Secret
-  other-modules:       Prime.Secret.Keys
-                       Prime.Secret.Cipher
-                       Prime.Secret.Client
-                       Prime.Secret.Password
-                       Prime.Secret.Signing
-  exposed-modules:     Prime.Servant.Session
-                       Prime.Servant.PrimeApi
-                       Prime.Servant.Client
-                       Prime.Servant.Api
-                       Prime.Servant.Monad
-                       Prime.Servant.Models
-  other-modules:       Prime.Servant.PrimeApi.Enroll
-                       Prime.Servant.PrimeApi.Login
-                       Prime.Servant.PrimeApi.Sharing
-  build-depends:       foundation, base
-                     , memory, bytestring, binary, text
-                     , cryptonite
-                     , pvss
-                     , hourglass, time
-                     , filepath, directory
-                     , persistent, persistent-template
-                     , aeson
-                     , esqueleto
-                     , exceptions, mtl
-                     , servant-auth-cookie, servant, servant-server, servant-client
-                     , data-default
-                     , wai, http-types
-  default-language:    Haskell2010
-  ghc-options:         -Wall -fwarn-tabs
-  Default-Extensions:  NoImplicitPrelude
-                       MultiParamTypeClasses
-                       FlexibleContexts
-                       FlexibleInstances
-                       TypeFamilies
+extra-source-files:
+    CHANGELOG.md
+    LICENSE
+    README.md
 
 source-repository head
-  type:     git
+  type: git
   location: https://github.com/primetype/sharesafe-lib
+
+library
+  hs-source-dirs:
+      src
+  default-extensions: NoImplicitPrelude TypeFamilies DataKinds
+  exposed-modules:
+      Prime.Common.Base
+      Prime.Common.JSON
+      Prime.Common.Persistent
+      Prime.Common.Time
+      Prime.Common.PEM
+      Prime.Secret
+  other-modules:
+      Prime.Secret.Cipher
+      Prime.Secret.Client
+      Prime.Secret.Keys
+      Prime.Secret.Password
+      Prime.Secret.Signing
+      Paths_sharesafe_lib
+  build-depends:
+      foundation
+    , memory
+    , bytestring
+    , binary
+    , base
+    , cryptonite
+    , pvss
+    , hourglass
+    , aeson
+    , text
+    , persistent
+    , pem
+  default-language: Haskell2010
+  ghc-options: -Wall
+
+executable sharesafe
+  main-is: Main.hs
+  hs-source-dirs:
+      app
+  default-extensions: NoImplicitPrelude TypeFamilies DataKinds
+  ghc-options: -Wall
+  build-depends:
+      foundation
+    , memory
+    , bytestring
+    , binary
+    , base
+    , cryptonite
+    , pvss
+    , hourglass
+    , aeson
+    , text
+    , persistent
+    , pem
+    , sharesafe-lib
+    , haskeline
+    , directory
+    , filepath
+    , optparse-applicative
+    , zlib
+  other-modules:
+      Prime.App.Env
+      Prime.App.Monad
+  default-language: Haskell2010

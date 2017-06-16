@@ -1,4 +1,4 @@
-resolver: lts-8.11
+resolver: lts-8.17
 packages:
 - '.'
 - location:
@@ -7,8 +7,8 @@ packages:
   extra-dep: true
 - location:
     git: https://github.com/haskell-foundation/foundation
-    commit: 8ee5415b28935d31f311fd4696a472f10c4fe11a
+    commit: efbe48f6001ab4807bf240f67c334b98d51ad23a
   extra-dep: true
-extra-deps: [pvss-0.1, cryptonite-0.23, memory-0.14.5]
+extra-deps: [pvss-0.1, cryptonite-0.23, memory-0.14.6]
 flags: {}
 extra-package-dbs: []

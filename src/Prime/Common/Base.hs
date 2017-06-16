@@ -14,4 +14,5 @@ import Data.ByteArray as X ( ByteArray
                            , ByteArrayAccess
                            , Bytes
                            , ScrubbedBytes
+                           , convert
                            )

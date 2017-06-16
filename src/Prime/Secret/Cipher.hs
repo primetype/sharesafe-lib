@@ -22,6 +22,7 @@ module Prime.Secret.Cipher
 import Prime.Common.Base
 import Prime.Common.Persistent
 import Prime.Common.JSON
+import Prime.Common.PEM
 
 import           Data.ByteArray (view)
 import qualified Data.ByteArray as B
@@ -37,14 +38,18 @@ import qualified Crypto.Cipher.ChaChaPoly1305 as C
 newtype Ciphered a = Ciphered Bytes
   deriving (Eq, Ord, Typeable, Monoid, ByteArray, ByteArrayAccess)
 instance ToJSON (Ciphered a) where
-    toJSON = baToValue
+    toJSON = baToValue64
 instance FromJSON (Ciphered a) where
-    parseJSON = baFromValue
+    parseJSON = baFromValue64
 instance PersistField (Ciphered a) where
     toPersistValue = baToPersistValue
     fromPersistValue = baFromPersistValue
 instance PersistFieldSql (Ciphered a) where
     sqlType _ = baPersistFieldSql
+instance HasPEM a => HasPEM (Ciphered a) where
+    type PEMSafe (Ciphered a) = 'True
+    pemName a = "Ciphered " <> pemProxy a pemName
+    pemHeaders a = pemProxy a pemHeaders
 
 -- | Randomly Generate a Nonce
 mkNonce :: MonadRandom randomly => randomly (CryptoFailable Nonce)
@@ -67,6 +72,10 @@ start s nonce header = do
 
 newtype EncryptionKey = EncryptionKey B.ScrubbedBytes
   deriving (Eq, Typeable, ByteArrayAccess)
+instance HasPEM EncryptionKey where
+    type PEMSafe EncryptionKey = 'False
+    pemName _ = "EncryptionKey"
+    pemHeaders _ = []
 
 generateEncryptionKey :: MonadRandom randomly => randomly EncryptionKey
 generateEncryptionKey = EncryptionKey <$> getRandomBytes 32

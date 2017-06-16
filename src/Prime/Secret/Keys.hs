@@ -18,6 +18,7 @@ module Prime.Secret.Keys
 import Prime.Common.Base
 import Prime.Common.JSON
 import Prime.Common.Persistent
+import Prime.Common.PEM
 
 import qualified Data.ByteArray as B
 import qualified Crypto.PVSS as PVSS
@@ -66,7 +67,7 @@ instance PVSSCompatible PublicKey where
     toPVSSType = unPublicKey
     fromPVSSType = PublicKey
 instance ByteArray PublicKey where
-    allocRet n f = second fromBS <$> (B.allocRet n f)
+    allocRet n f = second fromBS <$> B.allocRet n f
 instance ByteArrayAccess PublicKey where
     length = B.length . toBS
     withByteArray pk = B.withByteArray (toBS pk)
@@ -79,6 +80,10 @@ instance PersistField PublicKey where
     fromPersistValue a = PublicKey <$> binFromPersistValue a
 instance PersistFieldSql PublicKey where
     sqlType _ = binPersistFieldSql
+instance HasPEM PublicKey where
+    type PEMSafe PublicKey = 'True
+    pemName _ = "PublicKey"
+    pemHeaders _ = []
 
 -- | PrivateKey, to not share as is.
 --
@@ -98,12 +103,16 @@ instance ByteArrayAccess PrivateKey where
     length = B.length . toBS
     withByteArray pk = B.withByteArray (toBS pk)
 instance ByteArray PrivateKey where
-    allocRet n f = second fromBS <$> (B.allocRet n f)
+    allocRet n f = second fromBS <$> B.allocRet n f
+instance HasPEM PrivateKey where
+    type PEMSafe PrivateKey = 'False
+    pemName _ = "SecretKey"
+    pemHeaders _ = []
 
 -- | Key Pair
 data KeyPair = KeyPair
-    { toPrivateKey :: PrivateKey
-    , toPublicKey  :: PublicKey
+    { toPrivateKey :: !PrivateKey
+    , toPublicKey  :: !PublicKey
     }
 instance PVSSCompatible KeyPair where
     type PVSSType KeyPair = PVSS.KeyPair

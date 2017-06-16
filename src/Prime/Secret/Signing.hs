@@ -29,9 +29,14 @@ import           Crypto.Error
 import           Crypto.KDF.PBKDF2 (fastPBKDF2_SHA512, Parameters(..))
 
 import           Prime.Secret.Password (Password, Salt)
+import           Prime.Common.PEM
 
 newtype SigningKey = SigningKey S.SecretKey
   deriving (Eq, ByteArrayAccess)
+instance HasPEM SigningKey where
+    type PEMSafe SigningKey = 'False
+    pemName _ = "SigningKey"
+    pemHeaders _ = []
 
 newtype VerifyKey = VerifyKey S.PublicKey
   deriving (Show, Eq, ByteArrayAccess)
@@ -52,6 +57,10 @@ instance PersistField VerifyKey where
             CryptoPassed a   -> return $ VerifyKey a
 instance PersistFieldSql VerifyKey where
     sqlType _ = baPersistFieldSql
+instance HasPEM VerifyKey where
+    type PEMSafe VerifyKey = 'True
+    pemName _ = "VerifyKey"
+    pemHeaders _ = []
 
 newtype Signature = Signature S.Signature
   deriving (Show, Eq, ByteArrayAccess)
@@ -72,6 +81,10 @@ instance PersistField Signature where
             CryptoPassed a   -> return $ Signature a
 instance PersistFieldSql Signature where
     sqlType _ = baPersistFieldSql
+instance HasPEM Signature where
+    type PEMSafe Signature = 'True
+    pemName _ = "Signature"
+    pemHeaders _ = []
 
 toVerifyKey :: SigningKey -> VerifyKey
 toVerifyKey (SigningKey sk) = VerifyKey $ S.toPublic sk

@@ -39,6 +39,7 @@ import qualified Text.Read as Prelude
 import Prime.Common.Base
 import Prime.Common.JSON
 import Prime.Common.Persistent
+import Prime.Common.PEM
 
 import qualified Data.ByteArray as B
 import           Crypto.Random (MonadRandom(..))
@@ -84,7 +85,7 @@ defaultParameters = Parameters
 protect :: (MonadRandom randomly, ByteArrayAccess bytes)
         => Password
         -> bytes
-        -> randomly (CryptoFailable (PasswordProtected a))
+        -> randomly (CryptoFailable (PasswordProtected bytes))
 protect pwd stuff = do
     let header = mempty :: B.ScrubbedBytes
     Salt salt <- mkSalt
@@ -105,7 +106,7 @@ recover :: ByteArray bytes
 recover pwd (PasswordProtected salt_stuff) = do
     let header = mempty :: B.ScrubbedBytes
     let salt = B.view salt_stuff 0 defaultSaltLength
-    let stuff = Ciphered $ B.drop (defaultSaltLength) salt_stuff
+    let stuff = Ciphered $ B.drop  defaultSaltLength salt_stuff
     pps <- encryptionKey $ fastPBKDF2_SHA512 defaultParameters pwd salt
     decrypt' pps header stuff
 
@@ -120,3 +121,7 @@ instance PersistField (PasswordProtected a) where
     fromPersistValue = baFromPersistValue
 instance PersistFieldSql (PasswordProtected a) where
     sqlType _ = baPersistFieldSql
+instance HasPEM a => HasPEM (PasswordProtected a) where
+    type PEMSafe (PasswordProtected a) = 'True
+    pemName a = "PasswordProtected " <> pemProxy a pemName
+    pemHeaders a = pemProxy a pemHeaders
