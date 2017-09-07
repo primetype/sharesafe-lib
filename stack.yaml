@@ -1,14 +1,10 @@
-resolver: lts-8.17
+resolver: lts-9.3
 packages:
 - '.'
 - location:
     git: https://github.com/NicolasDP/servant-auth-cookie
     commit: 31c3d5d0afa8ae8ae02b17f4a0cb824a5b486b93
   extra-dep: true
-- location:
-    git: https://github.com/haskell-foundation/foundation
-    commit: efbe48f6001ab4807bf240f67c334b98d51ad23a
-  extra-dep: true
-extra-deps: [pvss-0.1, cryptonite-0.23, memory-0.14.6]
+extra-deps: [pvss-0.2.0]
 flags: {}
 extra-package-dbs: []
