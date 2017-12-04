@@ -5,7 +5,8 @@
 -- Stability   : stable
 -- Portability : Good
 --
-{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleContexts  #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Prime.Secret.Keys
     ( PVSSCompatible(..)
@@ -16,11 +17,13 @@ module Prime.Secret.Keys
     ) where
 
 import Prime.Common.Base
+import Prime.Common.Docs
 import Prime.Common.JSON
 import Prime.Common.Persistent
 import Prime.Common.PEM
 
 import qualified Data.ByteArray as B
+import qualified Data.ByteArray.Encoding as B
 import qualified Crypto.PVSS as PVSS
 import           Crypto.Random (MonadRandom)
 
@@ -57,6 +60,8 @@ keyPairGenerate = fromPVSSType <$> PVSS.keyPairGenerate
 --
 newtype PublicKey = PublicKey { unPublicKey :: PVSS.PublicKey }
   deriving (Eq)
+instance Show PublicKey where
+    show = show . (B.convertToBase B.Base64 :: PublicKey -> Bytes)
 instance Ord PublicKey where
     compare a b = compare (toBS a) (toBS b)
 instance Monoid PublicKey where
@@ -72,9 +77,9 @@ instance ByteArrayAccess PublicKey where
     length = B.length . toBS
     withByteArray pk = B.withByteArray (toBS pk)
 instance ToJSON PublicKey where
-    toJSON = binToValue . unPublicKey
+    toJSON = toJSON . Base64
 instance FromJSON PublicKey where
-    parseJSON a = PublicKey <$> binFromValue a
+    parseJSON a = unBase64 <$> parseJSON a
 instance PersistField PublicKey where
     toPersistValue = binToPersistValue . unPublicKey
     fromPersistValue a = PublicKey <$> binFromPersistValue a
@@ -84,12 +89,19 @@ instance HasPEM PublicKey where
     type PEMSafe PublicKey = 'True
     pemName _ = "PublicKey"
     pemHeaders _ = []
+instance ToSample PublicKey where
+    toSamples _ = singleSample
+                $ either undefined id
+                $ B.convertFromBase B.Base64
+                  ("A3twGygrTf6/TRHNzWVEG78ltGLuY69gnTBMTDY+i6Yh" :: String)
+instance Arbitrary PublicKey where
+    arbitrary = toPublicKey <$> arbitrary
 
 -- | PrivateKey, to not share as is.
---
--- is not shown
 newtype PrivateKey = PrivateKey { unPrivateKey :: PVSS.PrivateKey }
   deriving (Eq)
+instance Show PrivateKey where
+    show = show . (B.convertToBase B.Base64 :: PrivateKey -> Bytes)
 instance Ord PrivateKey where
     compare a b = compare (toBS a) (toBS b)
 instance Monoid PrivateKey where
@@ -108,15 +120,29 @@ instance HasPEM PrivateKey where
     type PEMSafe PrivateKey = 'False
     pemName _ = "SecretKey"
     pemHeaders _ = []
+instance ToSample PrivateKey where
+    toSamples _ = singleSample
+                $ either undefined id
+                $ B.convertFromBase B.Base64
+                  ("c2t+ZqM5cnLp0VU8cpEtOlzE2r0m642vnZ5fNxYjXGE=" :: String)
+instance Arbitrary PrivateKey where
+    arbitrary = toPrivateKey <$> arbitrary
 
 -- | Key Pair
 data KeyPair = KeyPair
     { toPrivateKey :: !PrivateKey
     , toPublicKey  :: !PublicKey
-    }
+    } deriving (Show, Eq)
 instance PVSSCompatible KeyPair where
     type PVSSType KeyPair = PVSS.KeyPair
     toPVSSType kp = PVSS.KeyPair (toPVSSType $ toPrivateKey kp)
                                  (toPVSSType $ toPublicKey kp)
     fromPVSSType kp = KeyPair (fromPVSSType $ PVSS.toPrivateKey kp)
                               (fromPVSSType $ PVSS.toPublicKey kp)
+instance ToSample KeyPair where
+    toSamples _ = singleSample KeyPair
+        { toPrivateKey = getSample
+        , toPublicKey  = getSample
+        }
+instance Arbitrary KeyPair where
+    arbitrary = liftCryptoRandom keyPairGenerate

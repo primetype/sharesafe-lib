@@ -28,7 +28,7 @@ module Prime.Secret
     , verify
     , signingKeyFromPassword
     , -- * Secret
-      Share(..), ExtraGen, Commitment, EncryptedShare, DecryptedShare
+      Share(..), ExtraGen, Commitment, EncryptedShare, DecryptedShare, Threshold
       -- ** generate secret
     , generateSecret
       -- ** verify share
@@ -45,9 +45,10 @@ module Prime.Secret
     ,  -- ** stream
       State
     , start
+    , mkNonce, Nonce
     , finalize, Auth
-    , encrypt
-    , decrypt
+    , encrypt, encryptC, encryptC'
+    , decrypt, decryptC, decryptC'
     , -- ** helpers
       Ciphered(..)
     , encrypt'

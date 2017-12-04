@@ -23,6 +23,7 @@
 --
 
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE OverloadedStrings          #-}
 
 module Prime.Secret.Password
     ( Password
@@ -34,40 +35,56 @@ module Prime.Secret.Password
     ) where
 
 import qualified Prelude
-import qualified Text.Read as Prelude
 
 import Prime.Common.Base
 import Prime.Common.JSON
 import Prime.Common.Persistent
 import Prime.Common.PEM
 
+import Servant.Docs
+
 import qualified Data.ByteArray as B
+import qualified Data.ByteArray.Encoding as B
 import           Crypto.Random (MonadRandom(..))
 import           Crypto.Error
 
 import Crypto.KDF.PBKDF2 (fastPBKDF2_SHA512, Parameters(..))
-import Data.ByteString.Char8 (pack)
+import Data.ByteString.Char8 (unpack)
 
 import Prime.Secret.Cipher
 
 -- | Password, not showable, should not be serialised etc.
 --
--- instances of ByteArray and ByteArrayAccess are for convenience conversion
--- for when reading/obtaining the password.
---
 -- The memory is scrubbed so it is not possible to recover it later
 --
 newtype Password = Password B.ScrubbedBytes
   deriving (Eq, Ord, Typeable, Monoid, ByteArray, ByteArrayAccess)
-instance Prelude.Read Password where
-    readPrec = Password . B.convert . pack <$> Prelude.readPrec
+instance Show Password where
+    show = unpack . B.convert
+instance ToSample Password where
+    toSamples _ = singleSample $ B.convert ("correct-horse-battery-staple" :: String)
+instance ToJSON Password where
+    toJSON = toJSON . Base64
+instance FromJSON Password where
+    parseJSON a = unBase64 <$> parseJSON a
+instance Arbitrary Password where
+    arbitrary = elements $ nonEmpty_ $ fmap B.convert
+      [ mempty :: String
+      , "correct-host-battery-staple" :: String
+      ]
 
 newtype Salt = Salt B.Bytes
     deriving (Eq, Ord, Typeable, Monoid, ByteArray, ByteArrayAccess)
+instance Show Salt where
+    show = unpack . B.convertToBase B.Base64
 instance ToJSON Salt where
-    toJSON = baToValue
+    toJSON = toJSON . Base64
 instance FromJSON Salt where
-    parseJSON = baFromValue
+    parseJSON a = unBase64 <$> parseJSON a
+instance ToSample Salt where
+    toSamples _ = singleSample $ B.convert ("\0\1\2\3\4\5\6\7\8\9\10\11" :: String)
+instance Arbitrary Salt where
+    arbitrary = liftCryptoRandom mkSalt
 
 defaultSaltLength :: Int
 defaultSaltLength = 12
@@ -111,11 +128,11 @@ recover pwd (PasswordProtected salt_stuff) = do
     decrypt' pps header stuff
 
 newtype PasswordProtected a = PasswordProtected B.Bytes
-  deriving (Eq, Ord, Typeable, Monoid, ByteArray, ByteArrayAccess)
+  deriving (Show, Eq, Ord, Typeable, Monoid, ByteArray, ByteArrayAccess)
 instance ToJSON (PasswordProtected a) where
-    toJSON = baToValue
+    toJSON = toJSON . Base64
 instance FromJSON (PasswordProtected a) where
-    parseJSON = baFromValue
+    parseJSON a = unBase64 <$> parseJSON a
 instance PersistField (PasswordProtected a) where
     toPersistValue = baToPersistValue
     fromPersistValue = baFromPersistValue
@@ -125,3 +142,13 @@ instance HasPEM a => HasPEM (PasswordProtected a) where
     type PEMSafe (PasswordProtected a) = 'True
     pemName a = "PasswordProtected " <> pemProxy a pemName
     pemHeaders a = pemProxy a pemHeaders
+instance ToSample (PasswordProtected a) where
+    toSamples _ = singleSample $ PasswordProtected $ B.convert b
+      where
+        b :: String
+        b = "\0\1\2\3\4\5\6\7\8\9\10\11\12\13\14\15\16\17\18\19\20\21\22\23\24"
+instance (ByteArrayAccess a, Arbitrary a) => Arbitrary (PasswordProtected a) where
+    arbitrary = do
+      pwd <- arbitrary
+      a <- arbitrary
+      throwCryptoError <$> liftCryptoRandom (protect pwd a)

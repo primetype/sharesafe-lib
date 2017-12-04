@@ -10,6 +10,8 @@ module Prime.Common.PEM
     , pemProxy
     , pemSave
     , pemRead
+    , toPEM
+    , fromPEM
     , findPem
     ) where
 
@@ -40,14 +42,18 @@ type family IsPEMSafeType a b where
 pemProxy :: HasPEM a => proxy a -> (a -> b) -> b
 pemProxy _ f = f undefined
 
+toPEM :: (ByteArrayAccess a, HasPEM a, IsPEMSafe a) => a -> ByteString
+toPEM a = pemWriteBS $ PEM (pemName a) (pemHeaders a) (convert a)
+
+fromPEM :: ([PEM] -> a) -> ByteString -> Either LString a
+fromPEM f = fmap f . pemParseBS
+
 pemSave :: (ByteArrayAccess a, HasPEM a, IsPEMSafe a)
         => LString -> a -> IO ()
-pemSave fp a =
-    B.appendFile fp $ pemWriteBS $
-        PEM (pemName a) (pemHeaders a) (convert a)
+pemSave fp = B.appendFile fp . toPEM
 
 pemRead :: LString -> ([PEM] -> a) -> IO (Either LString a)
-pemRead fp f = fmap f . pemParseBS <$> B.readFile fp
+pemRead fp f = fromPEM f <$> B.readFile fp
 
 findPem :: HasPEM a => [PEM] -> proxy a -> Maybe PEM
 findPem l = findPem' undefined

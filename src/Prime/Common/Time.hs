@@ -7,6 +7,7 @@
 --
 
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE NoOverloadedStrings #-}
 
 module Prime.Common.Time
     ( Time
@@ -14,6 +15,7 @@ module Prime.Common.Time
     , timeCurrent
     , timeAdd
     , H.timePrint
+    , getTimeInSec, timeFromSec
     ) where
 
 import qualified Prelude
@@ -26,6 +28,8 @@ import           Data.Hourglass (Elapsed, Timeable)
 import qualified Data.Hourglass as H
 import qualified Time.System as H
 import           Control.Monad.IO.Class
+
+import           Servant.Docs
 
 newtype Time = Time Elapsed
   deriving (Eq, Ord, Typeable, H.Time, Timeable)
@@ -40,13 +44,23 @@ instance FromJSON Time where
             Nothing -> fail "unable to parse EPOCH time"
             Just t  -> return $ Time $ H.timeGetElapsed t
 instance PersistField Time where
-    toPersistValue (Time (H.Elapsed (H.Seconds i))) = PersistInt64 i
-    fromPersistValue a = Time . H.Elapsed . H.Seconds <$> fromPersistValue a
+    toPersistValue = PersistInt64 . getTimeInSec
+    fromPersistValue a = timeFromSec <$> fromPersistValue a
 instance PersistFieldSql Time where
     sqlType _ = SqlInt64
 instance Subtractive Time where
     type Difference Time = Elapsed
     (-) (Time a1) (Time a2) = a1 Prelude.- a2
+instance ToSample Time where
+    toSamples _ = singleSample $ Time 1505410855
+instance Arbitrary Time where
+    arbitrary = timeFromSec . fromIntegral <$> between (1, 1510690250)
+
+getTimeInSec :: Time -> Int64
+getTimeInSec (Time (H.Elapsed (H.Seconds i))) = i
+
+timeFromSec :: Int64 -> Time
+timeFromSec = Time . H.Elapsed . H.Seconds
 
 timeCurrent :: MonadIO io => io Time
 timeCurrent = Time <$> liftIO H.timeCurrent

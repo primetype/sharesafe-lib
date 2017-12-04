@@ -1,10 +1,6 @@
-resolver: lts-9.3
+resolver: nightly-2017-12-01
 packages:
 - '.'
-- location:
-    git: https://github.com/NicolasDP/servant-auth-cookie
-    commit: 31c3d5d0afa8ae8ae02b17f4a0cb824a5b486b93
-  extra-dep: true
 extra-deps: [pvss-0.2.0]
 flags: {}
 extra-package-dbs: []
