@@ -1,4 +1,4 @@
-resolver: nightly-2017-12-01
+resolver: lts-9.17
 packages:
 - '.'
 extra-deps: [pvss-0.2.0]
