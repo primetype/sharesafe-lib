@@ -144,7 +144,7 @@ narSourceHeaderC = do
     mba <- awaitBytes 32
     pure $ case recast <$> mba of
         Nothing -> Nothing
-        Just ba -> do
+        Just ba ->
             let [s,f,l1,l2] = unLE <$> toList ba
              in Just $ NarHeader s f l1 l2
 
@@ -174,8 +174,8 @@ narSourceContentC' n mkBlob
         mba <- awaitUpTo l
         case mba of
             Nothing -> return ()
-            Just b  | length b == 0 -> error "huh...."
-                    | otherwise     -> do
+            Just b  | null b    -> error "huh...."
+                    | otherwise -> do
                 let remaining = fromMaybe 0 $ l - length b
                 yield (Blob $ mkBlob b remaining)
                 go remaining

@@ -15,11 +15,11 @@ matrix:
   - env: BUILD=hlint
     language: generic
     compiler: hlint
-  - env: BUILD=stack RESOLVER=ghc-8.0
+  - env: BUILD=stack
     language: generic
     addons: { apt: { packages: [ libgmp-dev ] } }
-    compiler: ghc-8.0
-  - env: BUILD=stack RESOLVER=ghc-8.0
+    compiler: ghc-8.0.1
+  - env: BUILD=stack
     os: osx
     language: generic
     compiler: ghc-8.0

@@ -24,7 +24,7 @@ instance Arbitrary NarTestObj where
     b1 <- fromList <$> replicateM (fromIntegral b1sz) arbitrary
     b2sz <- between (0, 32)
     b2 <- fromList <$> replicateM (fromIntegral b2sz) arbitrary
-    pure $ NarTestObj
+    pure NarTestObj
       { ntoHeader = NarHeader h f (fromIntegral b1sz) (fromIntegral b2sz)
       , ntoBlob1  = b1
       , ntoBlob2  = b2

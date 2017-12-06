@@ -108,7 +108,7 @@ listSubProgram = do
   action $ \toParam -> do
     let name = toParam namef :: LString
 
-    withContactKeys name $ \keys -> do
+    withContactKeys name $ \keys ->
       forM_ keys $ putStrLn . fromString . show
 
 {-
@@ -182,7 +182,7 @@ unlockShareWithSubProgram = do
 -- -------------------------------------------------------------------------- --
 
 addContactKey :: LString -> PublicKey -> IO ()
-addContactKey contact pk = withContactKeys contact $ \keys -> do
+addContactKey contact pk = withContactKeys contact $ \keys ->
   when (not $ pk `elem` keys) $
     withContactFile contact $ \path ->
       withFile path AppendMode $ \h ->
@@ -197,8 +197,7 @@ withContactKeys contact f = withContactFile contact $ \path -> do
 withContactFile :: LString -> (FilePath -> IO a) -> IO a
 withContactFile contact f = withContactDir $ \dir -> do
   let path = dir </> fromString contact
-  exists <- doesFileExist (filePathToLString path)
-  unless exists $ Prelude.writeFile (filePathToLString path) ""
+  mkFileIfNotExist path
   f path
 
 withContactDir :: (FilePath -> IO a) -> IO a
@@ -225,15 +224,19 @@ withSelfPublicKey alias f = withSelfKeyPairFile alias $ \path -> do
   let e = flip fromPEM bytes $ flip findPem (Proxy :: Proxy PublicKey)
   case e of
       Left err -> fail $ "keypair error: " <> err
-      Right Nothing -> fail $ "Cannot find PEM"
+      Right Nothing -> fail "Cannot find PEM"
       Right (Just pemPk) -> f $ convert (pemContent pemPk)
 
 withSelfKeyPairFile :: LString -> (FilePath -> IO a) -> IO a
 withSelfKeyPairFile alias f = withSelfDir $ \dir -> do
   let path = dir </> fromString alias
+  mkFileIfNotExist path
+  f path
+
+mkFileIfNotExist :: FilePath -> IO ()
+mkFileIfNotExist path = do
   exists <- doesFileExist (filePathToLString path)
   unless exists $ Prelude.writeFile (filePathToLString path) ""
-  f path
 
 withSelfDir :: (FilePath -> IO a) -> IO a
 withSelfDir f = withDataDirectory $ \dir -> do
@@ -286,7 +289,7 @@ pvssNewShareSubProgram = command "new" $ do
                   let e = flip fromPEM bytes $ flip findPem (Proxy :: Proxy PublicKey)
                   case e of
                       Left err -> fail $ "keypair error: " <> err
-                      Right Nothing -> fail $ "Cannot find PEM"
+                      Right Nothing -> fail "Cannot find PEM"
                       Right (Just pemPk) -> return $ convert $ pemContent pemPk
         (ek, commitments, shares) <- generateSecret threshold pks
 
@@ -347,8 +350,8 @@ pvssRecoverSubProgram = command "recover" $ do
     action $ \toParam -> do
         -- retrieve the shares
         let shares = toParam sharesf
-        xshare <- forM shares $ \x -> do
-                    case binFromBase64 $ (fromString x :: String) of
+        xshare <- forM shares $ \x ->
+                    case binFromBase64 (fromString x :: String) of
                       Left err -> fail $ "share encoded error: " <> err
                       Right e  -> return e
         ek <- case recoverSecret xshare of
@@ -478,7 +481,7 @@ parsePasswordParam = Right . B.convert . f
     f = fromString
 
 parseEncryptionKey :: LString -> Either LString EncryptionKey
-parseEncryptionKey str = do
+parseEncryptionKey str =
     case B.convertFromBase B.Base64 $ f str of
       Left err -> Left err
       Right sbs -> case encryptionKey sbs of
@@ -500,7 +503,7 @@ withKeyPair pwd h f = do
             <*> findPem l (Proxy :: Proxy (PasswordProtected PrivateKey))
   case e of
       Left err -> fail $ "keypair error: " <> err
-      Right Nothing -> fail $ "Cannot find PEM"
+      Right Nothing -> fail "Cannot find PEM"
       Right (Just (pemPk, pemPppk)) -> do
         let pk    = convert $ pemContent pemPk
         let pppks = convert $ pemContent pemPppk
@@ -513,5 +516,5 @@ withPublicKey h f = do
   let e = flip fromPEM bytes $ \l -> findPem l (Proxy :: Proxy PublicKey)
   case e of
       Left err -> fail $ "keypair error: " <> err
-      Right Nothing -> fail $ "Cannot find PEM"
+      Right Nothing -> fail "Cannot find PEM"
       Right (Just pemPk) -> f $ convert $ pemContent pemPk
