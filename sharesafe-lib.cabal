@@ -1,6 +1,8 @@
--- This file has been generated from package.yaml by hpack version 0.17.1.
+-- This file has been generated from package.yaml by hpack version 0.20.0.
 --
 -- see: https://github.com/sol/hpack
+--
+-- hash: f9f964b1f2577ba4c88980277e52f5e192a7d8becd4a9870d3e5fcae94df92f8
 
 name:           sharesafe-lib
 version:        0.0.1
@@ -30,20 +32,20 @@ library
   default-extensions: NoImplicitPrelude TypeFamilies DataKinds OverloadedStrings
   ghc-options: -Wall
   build-depends:
-      basement
-    , foundation
-    , memory
-    , bytestring
-    , binary
+      aeson
     , base
+    , basement
+    , binary
+    , bytestring
     , cryptonite
-    , pvss
+    , foundation
     , hourglass
-    , aeson
-    , text
-    , persistent
+    , memory
     , pem
+    , persistent
+    , pvss
     , servant-docs
+    , text
   exposed-modules:
       Prime.Common.Base
       Prime.Common.Conduit
@@ -70,24 +72,26 @@ executable sharesafe
   default-extensions: NoImplicitPrelude TypeFamilies DataKinds OverloadedStrings
   ghc-options: -Wall
   build-depends:
-      basement
-    , foundation
-    , memory
-    , bytestring
-    , binary
+      aeson
     , base
+    , basement
+    , binary
+    , bytestring
+    , cli
     , cryptonite
-    , pvss
+    , directory
+    , filepath
+    , foundation
     , hourglass
-    , aeson
-    , text
-    , persistent
+    , memory
     , pem
+    , persistent
+    , pvss
     , servant-docs
     , sharesafe-lib
-    , cli
-    , filepath
-    , directory
+    , text
+  other-modules:
+      Paths_sharesafe_lib
   default-language: Haskell2010
 
 test-suite sharesafe-lib-tests
@@ -98,22 +102,21 @@ test-suite sharesafe-lib-tests
   default-extensions: NoImplicitPrelude TypeFamilies DataKinds OverloadedStrings ScopedTypeVariables
   ghc-options: -Wall
   build-depends:
-      basement
-    , foundation
-    , memory
-    , bytestring
-    , binary
+      aeson
     , base
+    , basement
+    , binary
+    , bytestring
     , cryptonite
-    , pvss
+    , foundation
     , hourglass
-    , aeson
-    , text
-    , persistent
+    , memory
     , pem
+    , persistent
+    , pvss
     , servant-docs
     , sharesafe-lib
-    , foundation
+    , text
   other-modules:
       Test.Prime.Common
       Test.Prime.Common.JSON
@@ -126,4 +129,5 @@ test-suite sharesafe-lib-tests
       Test.Prime.Secret.Keys
       Test.Prime.Secret.Password
       Test.Prime.Secret.Signing
+      Paths_sharesafe_lib
   default-language: Haskell2010

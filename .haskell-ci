@@ -1,0 +1,19 @@
+# compiler supported and their equivalent LTS
+compiler: ghc-8.2 lts-10.5
+compiler: ghc-8.4 ghc-8.4-alpha2
+
+# options
+
+# builds
+build: ghc-8.2 gitdep=pvss
+build: ghc-8.4 gitdep=pvss allowed-failure
+
+# packages
+package: '.'
+
+gitdep: pvss https://github.com/input-output-hk/pvss-haskell 3c3926142c017255aa683256a1c8dd0c36cb9365
+
+# extra builds
+hlint: allowed-failure
+weeder: allowed-failure
+coverall: false

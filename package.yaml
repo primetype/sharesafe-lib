@@ -14,15 +14,16 @@ extra-source-files:
 ghc-options: -Wall
 
 dependencies:
+  - base
   - basement
   - foundation
+  - hourglass
   - memory
-  - bytestring
-  - binary
-  - base
   - cryptonite
   - pvss
-  - hourglass
+  
+  - bytestring
+  - binary
   - aeson
   - text
   - persistent
