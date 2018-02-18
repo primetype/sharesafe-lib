@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 1abc96b14fb723f5e6f99ec9ee726963922dc070949fc0bd81764b20a2404dad
+-- hash: b168abfac3b5f04144c67c2029246119aa5492aa94ce233b9b3c656d2386de5d
 
 name:           sharesafe-lib
 version:        0.0.1
@@ -25,6 +25,11 @@ extra-source-files:
 source-repository head
   type: git
   location: https://github.com/primetype/sharesafe-lib
+
+flag experimental
+  description: enable experimental command line interface
+  manual: True
+  default: False
 
 library
   hs-source-dirs:
@@ -90,6 +95,8 @@ executable sharesafe
     , servant-docs
     , sharesafe-lib
     , text
+  if flag(experimental)
+    cpp-options: EXPERIMENTAL_ENABLED=1
   other-modules:
       Paths_sharesafe_lib
   default-language: Haskell2010

@@ -1,3 +1,5 @@
+{-# LANGUAGE CPP #-}
+
 module Main (main) where
 
 import qualified Prelude
@@ -31,10 +33,11 @@ main = defaultMain $ do
   programVersion $ Version [0,1] ["alpha"]
   programDescription "ShareSafe: create and share secrets"
 
-  command "key" keySubProgram
-  command "pvss" pvssSubProgram
   command "cipher" cipherSubProgram
+  command "pvss" pvssSubProgram
+  command "key" keySubProgram
 
+#ifdef EXPERIMENTAL_ENABLED
   command "contact" $ do
     command "add"  addSubProgram
     command "list" listSubProgram
@@ -45,6 +48,7 @@ main = defaultMain $ do
   -- command "share" $ do
   --  command "new" shareSecretWithSubProgram
   --  command "unlock" unlockShareWithSubProgram
+#endif
 
 -- -------------------------------------------------------------------------- --
 --                      Convenient cmds                                       --

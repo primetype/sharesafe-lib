@@ -13,6 +13,12 @@ extra-source-files:
 
 ghc-options: -Wall
 
+flags:
+    experimental:
+        description: enable experimental command line interface
+        manual: true
+        default: false
+
 dependencies:
   - base
   - basement
@@ -58,6 +64,9 @@ executables:
       - cli
       - filepath
       - directory
+    when:
+      - condition: flag(experimental)
+        cpp-options: EXPERIMENTAL_ENABLED=1
 
 tests:
   sharesafe-lib-tests:
