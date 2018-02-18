@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: f9f964b1f2577ba4c88980277e52f5e192a7d8becd4a9870d3e5fcae94df92f8
+-- hash: 1abc96b14fb723f5e6f99ec9ee726963922dc070949fc0bd81764b20a2404dad
 
 name:           sharesafe-lib
 version:        0.0.1
@@ -40,7 +40,7 @@ library
     , cryptonite
     , foundation
     , hourglass
-    , memory
+    , memory >=0.14.14
     , pem
     , persistent
     , pvss
@@ -83,7 +83,7 @@ executable sharesafe
     , filepath
     , foundation
     , hourglass
-    , memory
+    , memory >=0.14.14
     , pem
     , persistent
     , pvss
@@ -110,7 +110,7 @@ test-suite sharesafe-lib-tests
     , cryptonite
     , foundation
     , hourglass
-    , memory
+    , memory >=0.14.14
     , pem
     , persistent
     , pvss

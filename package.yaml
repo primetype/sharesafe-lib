@@ -18,10 +18,10 @@ dependencies:
   - basement
   - foundation
   - hourglass
-  - memory
+  - memory >= 0.14.14
   - cryptonite
   - pvss
-  
+
   - bytestring
   - binary
   - aeson

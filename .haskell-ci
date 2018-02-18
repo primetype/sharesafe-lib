@@ -1,5 +1,5 @@
 # compiler supported and their equivalent LTS
-compiler: ghc-8.2 lts-10.5
+compiler: ghc-8.2 nightly-2018-02-17
 compiler: ghc-8.4 ghc-8.4-alpha2
 
 # options
