@@ -5,13 +5,14 @@ compiler: ghc-8.4 ghc-8.4-alpha2
 # options
 
 # builds
-build: ghc-8.2 gitdep=pvss
-build: ghc-8.4 gitdep=pvss allowed-failure
+build: ghc-8.2 gitdep=pvss gitdep=cli
+build: ghc-8.4 gitdep=pvss gitdep=cli allowed-failure
 
 # packages
 package: '.'
 
 gitdep: pvss https://github.com/input-output-hk/pvss-haskell 3c3926142c017255aa683256a1c8dd0c36cb9365
+gitdep: cli  https://github.com/vincenthz/hs-cli             ee5d7818c10355c732afea4750b028eb9e0dd14b
 
 # extra builds
 hlint: allowed-failure
