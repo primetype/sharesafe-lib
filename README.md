@@ -12,6 +12,81 @@ For example, one of the main application of the command line tool provided
 in this repository is to share deployment keys and configuration between the
 devops.
 
+## TL;DR: how to quickly start using `sharesafe`
+
+### Installation
+
+The recommended way is to use [`stack`](https://haskell-lang.org/get-started).
+
+```shell
+git clone https://github.com/primetype/sharesafe-lib
+cd sharesafe-lib
+stack install sharesafe
+```
+
+### grand tour
+
+#### creating key pairs
+
+The first thing you need to start sharing secrets is to generate key pairs:
+
+```shell
+# create a password protected secret key and public key
+sharesafe key new --password "c-137" --output rick.key
+# export your public key into a separate file
+sharesafe key export-public --input rick.key --output rick.pub
+```
+
+#### create a secret
+
+to create a secret, you only need the participants' _public key_. **There is
+no need for the private keys nor the passwords**.
+
+```shell
+sharesafe pvss new --secret encryption.key --threshold 2 --participant rick.pub  --participant morty.pub --participant jerry.pub
+```
+
+This commend will create:
+
+* a share secret and will convert it into a valid ChaChaPoly1305 encryption key `encryption.key` (see below);
+* for every participant: an associated shared file:
+  * rick.share: rick's share, encrypted with its public key (only rick's private key can unlock the share);
+  * morty.share: morty's share, encrypted with its public key (only morty's private key can unlock the share);
+  * jerry.share: jerry's share, encrypted with its public key (only jerry's private key can unlock the share);
+
+> the `.share` files can safely be shared over any support, secured or not.
+> They are encrypted a way only the owner of the private key can open it.
+
+In this command, the `threshold` is the minimum number of _unlock key_ needed
+to recover the `encryption.key`. See next command.
+
+#### Recover a secret
+
+To recover a shared secret, we need _n_ participants (`threshold`) to unlock
+their `.share`.
+
+```shell
+sharesafe pvss open-share -share rick.share --key rick.key --password "c-137" -o rick.opened-share
+```
+
+In the example above we set the threshold to 2 participants, so to retrieve the
+secret (`encryption.key`):
+
+```shell
+sharesafe pvss recover --share rick.opened-share --share morty.opened-share -o encryption.key
+```
+
+#### Use the generated/recovered to encrypt or decrypt a file
+
+`sharesafe` provides builtin support for ChaChaPoly1305 encryption protocol.
+This is a symmetric encryption. So the key is used for both encryption and
+decryption.
+
+```shell
+sharesafe cipher encrypt --key encryption.key --input destroying_the_citadel.pdf --output shielded_document
+sharesafe cipher decrypt --key encryption.key --input shielded_document          --output destroying_the_citadel.recovered.pdf
+```
+
 # Usage Examples
 
 ## Threshold of 1
