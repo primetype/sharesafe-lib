@@ -274,7 +274,7 @@ pvssSubProgram = do
 
 pvssNewShareSubProgram :: OptionDesc (IO ()) ()
 pvssNewShareSubProgram = command "new" $ do
-    description "generate a new share secret. The Participant's shares are generated based on the participants's public key filename. (filename -<.> share)"
+    description "generate a new share secret. The Participant's shares are generated based on the participants's public key filename. (filename -<.> secret-share)"
     pkssf <- flagMany $ flagParam (FlagShort 'p' <> FlagLong "participant" <> FlagDescription "Public key of the participants")
                                   (FlagRequired (Right . fromString))
     thresholdf <-      flagParam (FlagShort 't' <> FlagLong "threshold" <> FlagDescription "Threshold to retrive the secrets (default: 1)")
@@ -301,7 +301,7 @@ pvssNewShareSubProgram = command "new" $ do
         withFileOr (toParam outf) WriteMode stdout $ \h ->
           hPut h (B.convertToBase B.Base64 ek)
         forM_ (zip pkss shares) $ \(fp, share) ->
-          let fp' = fromString $ filePathToLString fp -<.> "share"
+          let fp' = fromString $ filePathToLString fp -<.> "secret-share"
            in withFile fp' WriteMode $ flip hPut (convert $ encodeJSON share)
 
 pvssVerifyShareSubProgram :: OptionDesc (IO ()) ()
@@ -321,7 +321,7 @@ pvssVerifyShareSubProgram = command "verify" $ do
       unless (verifyShare commitments share) $ error "invalid share"
 
 pvssOpenShareSubProgram :: OptionDesc (IO ()) ()
-pvssOpenShareSubProgram = command "open-share" $ do
+pvssOpenShareSubProgram = command "reveal-share" $ do
     description "open the given share"
     sharef <- flagParam (FlagShort 's' <> FlagLong "share" <> FlagDescription "Share to verify participant")
                                   (FlagRequired (Right . fromString))

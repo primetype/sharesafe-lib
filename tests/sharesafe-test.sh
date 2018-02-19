@@ -34,14 +34,14 @@ ${CMD} pvss new -p rick.pub -p morty.pub -p jerry.pub \
   -c commitments \
   -o encryption-key
 
-${CMD} pvss verify -s rick.share -c commitments
-${CMD} pvss verify -s morty.share -c commitments
-${CMD} pvss verify -s jerry.share -c commitments
+${CMD} pvss verify -s rick.secret-share -c commitments
+${CMD} pvss verify -s morty.secret-share -c commitments
+${CMD} pvss verify -s jerry.secret-share -c commitments
 
-${CMD} pvss open-share -s rick.share -k rick.key -o rick.opened-share
-${CMD} pvss open-share -s morty.share -k morty.key -o morty.opened-share
+${CMD} pvss reveal-share -s rick.secret-share -k rick.key -o rick.revealed-share
+${CMD} pvss reveal-share -s morty.secret-share -k morty.key -o morty.revealed-share
 
-${CMD} pvss recover -s $(cat rick.opened-share) -s $(cat morty.opened-share) \
+${CMD} pvss recover -s $(cat rick.revealed-share) -s $(cat morty.revealed-share) \
                     -o encryption-key.recovered
 
 test $(cat encryption-key) = $(cat encryption-key.recovered)

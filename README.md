@@ -49,12 +49,12 @@ sharesafe pvss new --secret encryption.key --threshold 2 --participant rick.pub 
 This command will create:
 
 * a share secret and will convert it into a **ChaChaPoly1305** compatible encryption key `encryption.key` (see below);
-* for every participant a `.share` file is created:
-  * `rick.share`: rick's share, encrypted with its public key (only rick's private key can unlock the share);
-  * `morty.share`: morty's share, encrypted with its public key (only morty's private key can unlock the share);
-  * `jerry.share`: jerry's share, encrypted with its public key (only jerry's private key can unlock the share);
+* for every participant a `.secret-share` file is created:
+  * `rick.secret-share`: rick's share, encrypted with its public key (only rick's private key can unlock the share);
+  * `morty.secret-share`: morty's share, encrypted with its public key (only morty's private key can unlock the share);
+  * `jerry.secret-share`: jerry's share, encrypted with its public key (only jerry's private key can unlock the share);
 
-> the `.share` files can safely be shared over any support, secured or not.
+> the `.secret-share` files can safely be shared over any support, secured or not.
 > They are encrypted a way only the owner of the private key can open it.
 
 In this command, the `threshold` is the minimum number of _opened shares_ needed
@@ -63,17 +63,17 @@ to recover the `encryption.key`. See next command.
 #### Recover a secret
 
 To recover a shared secret, we need _n_ participants (`threshold`) to open
-their `.share`.
+their `.secret-share`.
 
 ```shell
-sharesafe pvss open-share -share rick.share --key rick.key --password "c-137" -o rick.opened-share
+sharesafe pvss reveal-share -share rick.secret-share --key rick.key --password "c-137" -o rick.revealed-share
 ```
 
 In the example above we set the threshold to 2 participants, so to retrieve the
 secret (`encryption.key`):
 
 ```shell
-sharesafe pvss recover --share rick.opened-share --share morty.opened-share -o encryption.key
+sharesafe pvss recover --share rick.revealed-share --share morty.revealed-share -o encryption.key
 ```
 
 #### Use the generated/recovered to encrypt or decrypt a file
