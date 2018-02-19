@@ -1,4 +1,6 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE TupleSections #-}
+{-# LANGUAGE TypeApplications #-}
 
 module Main (main) where
 
@@ -16,9 +18,9 @@ import Data.Version (Version(..))
 import Data.List (zip)
 import Control.Monad (forM, forM_, mapM_)
 import Text.Read (readEither)
-import GHC.IO.Handle (Handle)
-import Foundation.String (Encoding(..))
+import GHC.IO.Handle (Handle, hSetBuffering, BufferMode(NoBuffering), hGetLine, hSetEcho, hGetEcho)
 import Foundation.IO
+import Foundation.Monad
 import Foundation.VFS.Path ((</>))
 import Foundation.VFS.FilePath (filePathToLString, FilePath)
 import Data.Maybe (fromMaybe)
@@ -37,91 +39,35 @@ main = defaultMain $ do
   command "pvss" pvssSubProgram
   command "key" keySubProgram
 
-#ifdef EXPERIMENTAL_ENABLED
-  command "contact" $ do
-    command "add"  addSubProgram
-    command "list" listSubProgram
-  command "self" $ do
-    command "new-key" newKeySubProgram
-    command "export-public" exportPublicSubProgram
-    command "change-password" changePasswordSubProgram
-  -- command "share" $ do
-  --  command "new" shareSecretWithSubProgram
-  --  command "unlock" unlockShareWithSubProgram
-#endif
+  command "list" listLocalStoreKeys
+  command "add" addKeyPairToLocalStore
+  command "encrypt" encryptWithLocalStore
+  command "decrypt" decryptWithLocalStore
 
 -- -------------------------------------------------------------------------- --
 --                      Convenient cmds                                       --
 -- -------------------------------------------------------------------------- --
 
-newKeySubProgram :: OptionDesc (IO ()) ()
-newKeySubProgram = do
-  description "generate a new key pair for ourselves in our local store"
-  pwd <- flagParam (FlagShort 'p' <> FlagLong "password" <> FlagDescription "Password protecting the generated private key")
-                   (FlagRequired parsePasswordParam)
-  namef <- argument "ALIAS" Right
-  action $ \toParam -> do
-    let alias = toParam namef
-    let password = fromMaybe mempty (toParam pwd)
-    kp <- keyPairGenerate
-    addSelfKeyPair password alias kp
+addKeyPairToLocalStore :: OptionDesc (IO ()) ()
+addKeyPairToLocalStore = do
+    description "Add a given keypair to the local store."
+    name <- argument "ALIAS" Right
+    file <- argument "FILE" (Right . fromString)
+    action $ \get ->
+        withFile (get file) ReadMode $ \s ->
+        withContactFile (get name) $ \path ->
+        withFile path WriteMode $ \d ->
+            runConduit $ sourceHandle s .| sinkHandle d
 
-exportPublicSubProgram :: OptionDesc (IO ()) ()
-exportPublicSubProgram = do
-  description "export the public key of the given key pair (associated to the given alias)"
-  outf    <-         flagParam (FlagShort 'o' <> FlagLong "output" <> FlagDescription "Where to write the shared file (default STDOUT)")
-                               (FlagRequired (Right . fromString))
-  namef <- argument "ALIAS" Right
-  action $ \toParam -> do
-    let alias = toParam namef
-    withSelfPublicKey alias $ \pk -> do
-      let pemPk = toPEM pk
-      withFileOr (toParam outf) WriteMode stdout $ flip hPut (convert pemPk)
+listLocalStoreKeys :: OptionDesc (IO ()) ()
+listLocalStoreKeys = do
+  description "list public alias with their associated public keys"
+  action $ \_ -> withContacts $ mapM_ putStrLn
 
-changePasswordSubProgram :: OptionDesc (IO ()) ()
-changePasswordSubProgram = do
-  description "Change the password of the given KeyPair (associated to the given alias)"
-  ppwd <- flagParam (FlagShort 'p' <> FlagLong "old-password" <> FlagDescription "Password protecting the private key")
-                    (FlagRequired parsePasswordParam)
-  npwd <- flagParam (FlagShort 'n' <> FlagLong "password" <> FlagDescription "New Password to protect the private key")
-                    (FlagRequired parsePasswordParam)
-  namef <- argument "ALIAS" Right
-  action $ \toParam -> do
-    -- get the password
-    let oldPassword = fromMaybe mempty $ toParam ppwd
-    let newPassword = fromMaybe mempty $ toParam npwd
-    let alias = toParam namef
-    withSelfKeyPair oldPassword alias $ addSelfKeyPair newPassword alias
-
-addSubProgram :: OptionDesc (IO ()) ()
-addSubProgram = do
-  description "add a public key to the local contact list"
-  namef <- argument "NAME" Right
-  inf   <- argument "PUBLIC KEY" (Right . fromString)
-  action $ \toParam -> do
-    let name = toParam namef :: LString
-
-    pk <- withFileOr (Just $ toParam inf) ReadMode stdin $ flip withPublicKey return
-
-    addContactKey name pk
-
-listSubProgram :: OptionDesc (IO ()) ()
-listSubProgram = do
-  description "list public keys of the given contact"
-  namef <- argument "NAME" Right
-  action $ \toParam -> do
-    let name = toParam namef :: LString
-
-    withContactKeys name $ \keys ->
-      forM_ keys $ putStrLn . fromString . show
-
-{-
-shareSecretWithSubProgram :: OptionDesc (IO ()) ()
-shareSecretWithSubProgram = do
-    description "kitchen sink command to encrypt a file to a given contact"
+encryptWithLocalStore :: OptionDesc (IO ()) ()
+encryptWithLocalStore = do
+    description "encrypt a file"
     pkssf <- flagMany $ flagParam (FlagShort 'p' <> FlagLong "participant" <> FlagDescription "name of the participant from contact list")
-                                  (FlagRequired Right)
-    selff <-            flagParam (FlagShort 's' <> FlagLong "self" <> FlagDescription "alias of the public key to use (default: main)")
                                   (FlagRequired Right)
     thresholdf <-      flagParam (FlagShort 't' <> FlagLong "threshold" <> FlagDescription "Threshold to retrive the secrets (default: 1)")
                                  (FlagRequired readEither)
@@ -134,26 +80,75 @@ shareSecretWithSubProgram = do
         let threshold = fromMaybe 1 $ toParam thresholdf
         -- retrieve the keys
         let pkss = toParam pkssf
-        pks <- forM pkss $ \contact -> do
-                  withContactKeys contact $ \keys -> case keys of
-                    [] -> error $ "given contact has no Keys: " <> contact
-                    (x:_) -> return x
-        spk <- withSelfPublicKey (fromMaybe "main" $ toParam selff) return
-        let apks = spk : pks
+        apks <- forM pkss $ \contact -> withContactKey contact $ \key _-> pure key
         unless (Prelude.length apks >= fromInteger threshold) $
             error "threshold is higher than number of participants"
 
         (key, commitments, shares) <- generateSecret threshold apks
 
         nonce <- throwCryptoError <$> mkNonce
-        withFileOr (toParam outf) WriteMode stdout $ \handleOut -> do
-          withFileOr (toParam inf) ReadMode stdin  $ \handleIn ->
-            runConduit $
-                   (packNar commitments   .| narSinkC)
-                *> (mapM_ packNar shares  .| narSinkC)
-                *> (sourceHandle handleIn .| encryptC' key header nonce) -- TODO: pack in a NAR Obj
-                .| sinkHandle handleOut
 
+        withFileOr (toParam outf) WriteMode stdout $ \handleOut ->
+          withFileOr (toParam inf) ReadMode stdin  $ \handleIn -> do
+            b <- runConduit $ sourceHandle handleIn .| encryptC' key header nonce .| sinkList
+            runConduit $ (packNar commitments >> mapM_ packNar shares >> packNar (mconcat b))
+                      .| narSinkC
+                      .| sinkHandle handleOut
+
+decryptWithLocalStore :: OptionDesc (IO ()) ()
+decryptWithLocalStore = do
+    description "decrypt a share"
+
+    pkssf <- flagMany $ flagParam (FlagShort 'p' <> FlagLong "participant" <> FlagDescription "name of the participant from contact list")
+                                  (FlagRequired Right)
+    inf     <-         flagParam (FlagShort 'i' <> FlagLong "input" <> FlagDescription "Where to read the file to share (default STDIN)")
+                                 (FlagRequired (Right . fromString))
+    outf    <-         flagParam (FlagShort 'o' <> FlagLong "output" <> FlagDescription "Where to write the shared file (default STDOUT)")
+                                 (FlagRequired (Right . fromString))
+    action $ \toParam -> do
+        -- retrieve the keys
+        let pkss = toParam pkssf
+        hSetBuffering stdin  NoBuffering
+        hSetBuffering stdout NoBuffering
+        echoing <- hGetEcho stdin
+        hSetEcho stdin False
+        apks <- forM pkss $ \contact -> withContactKey contact $ \pk pppks -> do
+                    putStr $ fromList $ "password for " <> contact <> ": "
+                    -- let pwd = mempty
+                    pwd <- either error id . parsePasswordParam <$> hGetLine stdin
+                    putStrLn ""
+                    flip KeyPair pk <$> throwCryptoErrorIO (recover pwd pppks)
+        hSetEcho stdin echoing
+
+        withFileOr (toParam outf) WriteMode stdout $ \handleOut ->
+          withFile (fromMaybe (error "missing input file") $ toParam inf) ReadMode $ \handleIn ->
+            runConduit $ sourceHandle handleIn
+                      .| narSourceC
+                      .| parseEncFile apks
+                      .| sinkHandle handleOut
+  where
+    parseEncFile users = do
+        Just commitments <- unpackNar (Proxy @[Commitment])
+        unlocked <- go mempty
+        Just b <- unpackNar (Proxy @(UArray Word8))
+        yield b .| decryptC' unlocked header
+      where
+        go acc = do
+            mshare <- unpackNar (Proxy @Share)
+            case mshare of
+                Nothing -> finalize acc
+                Just s  -> case getUserKeyPair s of
+                    Nothing -> go acc
+                    Just kp -> do
+                        os <- liftIO $ recoverShare kp s
+                        go (os : acc)
+        getUserKeyPair s = find (\kp -> sharePublicKey s == toPublicKey kp) users
+        finalize acc =
+            case recoverSecret acc of
+                CryptoPassed a -> pure a
+                CryptoFailed err -> error $ "failed to recover the secret: " <>  show err
+
+{-
 unlockShareWithSubProgram :: OptionDesc (IO ()) ()
 unlockShareWithSubProgram = do
     description "unlock one of the share from a given share (see: `share new` command)"
@@ -185,18 +180,9 @@ unlockShareWithSubProgram = do
 
 -- -------------------------------------------------------------------------- --
 
-addContactKey :: LString -> PublicKey -> IO ()
-addContactKey contact pk = withContactKeys contact $ \keys ->
-  when (not $ pk `elem` keys) $
-    withContactFile contact $ \path ->
-      withFile path AppendMode $ \h ->
-        hPut h (B.convertToBase B.Base64 pk <> fromList [0x0A])
-
-withContactKeys :: LString -> ([PublicKey] -> IO a) -> IO a
-withContactKeys contact f = withContactFile contact $ \path -> do
-    keys <- withFile path ReadMode $ \h ->
-              runConduit $ sourceHandle h .| fromBytes ASCII7 .| lines .| awaitBase B.Base64 .| sinkList
-    f keys
+withContactKey :: LString -> (PublicKey -> PasswordProtected PrivateKey -> IO a) -> IO a
+withContactKey contact f = withContactFile contact $ \path ->
+    withFile path ReadMode $ flip withPPKeyPair f
 
 withContactFile :: LString -> (FilePath -> IO a) -> IO a
 withContactFile contact f = withContactDir $ \dir -> do
@@ -204,55 +190,20 @@ withContactFile contact f = withContactDir $ \dir -> do
   mkFileIfNotExist path
   f path
 
+withContacts :: ([String] -> IO a) -> IO a
+withContacts f = withContactDir $ \dir ->
+    f . fmap fromList =<< listDirectory (filePathToLString dir)
+
 withContactDir :: (FilePath -> IO a) -> IO a
 withContactDir f = withDataDirectory $ \dir -> do
   let path = dir </> "contact"
   createDirectoryIfMissing True (filePathToLString path)
   f path
 
-addSelfKeyPair :: Password -> LString -> KeyPair -> IO ()
-addSelfKeyPair pwd alias kp = withSelfKeyPairFile alias $ \path -> do
-  pks <- throwCryptoErrorIO =<< protect pwd (toPrivateKey kp)
-  let pemSk = toPEM pks
-  let pemPk = toPEM (toPublicKey kp)
-  withFile path WriteMode $ flip hPut (convert $ pemSk <> pemPk)
-
-withSelfKeyPair :: Password -> LString -> (KeyPair -> IO a) -> IO a
-withSelfKeyPair pwd alias f = withSelfKeyPairFile alias $ \path -> do
-  kp <- withFile path ReadMode $ \h -> withKeyPair pwd h return
-  f kp
-
-withSelfPublicKey :: LString -> (PublicKey -> IO a) -> IO a
-withSelfPublicKey alias f = withSelfKeyPairFile alias $ \path -> do
-  bytes <- convert <$> readFile path
-  let e = flip fromPEM bytes $ flip findPem (Proxy :: Proxy PublicKey)
-  case e of
-      Left err -> fail $ "keypair error: " <> err
-      Right Nothing -> fail "Cannot find PEM"
-      Right (Just pemPk) -> f $ convert (pemContent pemPk)
-
-withSelfKeyPairFile :: LString -> (FilePath -> IO a) -> IO a
-withSelfKeyPairFile alias f = withSelfDir $ \dir -> do
-  let path = dir </> fromString alias
-  mkFileIfNotExist path
-  f path
-
 mkFileIfNotExist :: FilePath -> IO ()
 mkFileIfNotExist path = do
   exists <- doesFileExist (filePathToLString path)
   unless exists $ Prelude.writeFile (filePathToLString path) ""
-
-withSelfDir :: (FilePath -> IO a) -> IO a
-withSelfDir f = withDataDirectory $ \dir -> do
-  let path = dir </> "self"
-  createDirectoryIfMissing True (filePathToLString path)
-  f path
-
-withConfigDirectory :: (FilePath -> IO a) -> IO a
-withConfigDirectory f = do
-  dir <- getXdgDirectory XdgConfig "sharesafe"
-  createDirectoryIfMissing True dir
-  f $ fromString dir
 
 withDataDirectory :: (FilePath -> IO a) -> IO a
 withDataDirectory f = do
@@ -499,8 +450,8 @@ withFileOr :: Maybe FilePath -> IOMode -> Handle -> (Handle -> IO a) -> IO a
 withFileOr Nothing   _    h f = f h
 withFileOr (Just fp) mode _ f = withFile fp mode f
 
-withKeyPair :: Password -> Handle -> (KeyPair -> IO a) -> IO a
-withKeyPair pwd h f = do
+withPPKeyPair :: Handle -> (PublicKey -> PasswordProtected PrivateKey -> IO a) -> IO a
+withPPKeyPair h f = do
   bytes <- B.convert <$> hGet h 1024
   let e = flip fromPEM bytes $ \l -> (,)
             <$> findPem l (Proxy :: Proxy PublicKey)
@@ -508,11 +459,15 @@ withKeyPair pwd h f = do
   case e of
       Left err -> fail $ "keypair error: " <> err
       Right Nothing -> fail "Cannot find PEM"
-      Right (Just (pemPk, pemPppk)) -> do
+      Right (Just (pemPk, pemPppk)) ->
         let pk    = convert $ pemContent pemPk
-        let pppks = convert $ pemContent pemPppk
-        sk <- throwCryptoErrorIO $ recover pwd pppks
-        f $ KeyPair sk pk
+            pppks = convert $ pemContent pemPppk
+         in f pk pppks
+
+withKeyPair :: Password -> Handle -> (KeyPair -> IO a) -> IO a
+withKeyPair pwd h f = withPPKeyPair h $ \pk pppks -> do
+    sk <- throwCryptoErrorIO $ recover pwd pppks
+    f $ KeyPair sk pk
 
 withPublicKey :: Handle -> (PublicKey -> IO a) -> IO a
 withPublicKey h f = do

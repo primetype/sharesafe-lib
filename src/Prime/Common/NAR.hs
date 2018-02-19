@@ -1,4 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE FlexibleInstances #-}
 
 module Prime.Common.NAR
     ( NarHeader(..)
@@ -17,8 +19,31 @@ import Prime.Common.Conduit
 
 class IsNarItem item where
     magicNar  :: Word64
-    packNar   :: Monad m =>       item -> Conduit     () NarObj m   ()
-    unpackNar :: Monad m => proxy item -> Conduit NarObj     () m item
+    packNar   :: Monad m =>       item -> Conduit      a NarObj m   ()
+    unpackNar :: Monad m => proxy item -> Conduit NarObj      a m (Maybe item)
+instance IsNarItem (UArray Word8) where
+    magicNar = 0
+    packNar b = do
+      -- S S - s h a r e (ShareSafe-share)
+      let nh = NarHeader (magicNar @(UArray Word8)) 0 0 (fromIntegral $ fromCount $ length b)
+      yield (Header nh)
+      yield (Blob $ NarBlob1 mempty azero)
+      yield (Blob $ NarBlob2 b      azero)
+    unpackNar _ = do
+      mh <- await
+      case mh of
+          Nothing     -> pure Nothing
+          Just Blob{} -> error "invalid state"
+          Just h@(Header nh) | narHeaderSignature nh /= magicNar @(UArray Word8) -> leftover h >> pure Nothing
+                             | otherwise -> do
+              mb1 <- awaitBlob1
+              mb2 <- awaitBlob2
+              let mv = do
+                      _ <- mb1
+                      mb2
+              case mv of
+                Nothing -> error "not enought bytes..."
+                Just v  -> pure $ Just v
 
 data NarHeader = NarHeader
     { narHeaderSignature :: !Word64

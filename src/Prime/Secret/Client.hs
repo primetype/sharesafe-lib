@@ -113,20 +113,25 @@ instance IsNarItem Share where
       yield (Blob $ NarBlob1 b1 azero)
       yield (Blob $ NarBlob2 b2 azero)
     unpackNar _ = do
-      Just (Header nh) <- await
-      mb1 <- awaitBlob1
-      mb2 <- awaitBlob2
-      let mv = do
-              b1 <- mb1
-              b2 <- mb2
-              case baParseJSON b1 of
-                Left err -> error err
-                Right (_ :: PublicKey)  -> case baParseJSON b2 of
-                  Left err -> error err
-                  Right v  -> pure v
-      case mv of
-        Nothing -> error "not enought bytes..."
-        Just v  -> pure v
+      mh <- await
+      case mh of
+          Nothing     -> pure Nothing
+          Just Blob{} -> error "invalid state"
+          Just h@(Header nh) | narHeaderSignature nh /= magicNar @Share -> leftover h >> pure Nothing
+                             | otherwise -> do
+              mb1 <- awaitBlob1
+              mb2 <- awaitBlob2
+              let mv = do
+                      b1 <- mb1
+                      b2 <- mb2
+                      case baParseJSON b1 of
+                        Left err -> error err
+                        Right (_ :: PublicKey)  -> case baParseJSON b2 of
+                          Left err -> error err
+                          Right v  -> pure v
+              case mv of
+                Nothing -> error "not enought bytes..."
+                Just v  -> pure $ Just v
 
 -- | Commitment
 newtype Commitment = Commitment { unCommitment :: PVSS.Commitment }
@@ -159,14 +164,22 @@ instance IsNarItem [Commitment] where
       yield (Blob $ NarBlob1 mempty azero)
       yield (Blob $ NarBlob2 bs     azero)
     unpackNar _ = do
-      Just (Header nh) <- await
-      _   <- awaitBlob1
-      mbs <- awaitBlob2
-      case mbs of
-        Nothing -> error "not enough bytes"
-        Just bs -> case baParseJSON bs of
-          Left err -> error err
-          Right v  -> pure v
+      mh <- await
+      case mh of
+          Nothing     -> pure Nothing
+          Just Blob{} -> error "invalid state"
+          Just h@(Header nh) | narHeaderSignature nh /= magicNar @[Commitment] -> leftover h >> pure Nothing
+                             | otherwise -> do
+              mb1 <- awaitBlob1
+              mb2 <- awaitBlob2
+              let mv = do
+                      _ <- mb1
+                      mb2
+              case mv of
+                Nothing -> error "not enought bytes..."
+                Just bs -> case baParseJSON bs of
+                  Left err -> error err
+                  Right v  -> pure $ Just v
 
 -- | Generate a a Secret (A key to encrypt something) and the list of Shares.o
 --

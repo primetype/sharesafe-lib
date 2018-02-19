@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: b168abfac3b5f04144c67c2029246119aa5492aa94ce233b9b3c656d2386de5d
+-- hash: 1b49247c9c451995ae3e6bb902b35adb3337a0a886799bb0e9f8dc0931d1a596
 
 name:           sharesafe-lib
 version:        0.0.1
@@ -96,7 +96,7 @@ executable sharesafe
     , sharesafe-lib
     , text
   if flag(experimental)
-    cpp-options: EXPERIMENTAL_ENABLED=1
+    cpp-options: -DEXPERIMENTAL_ENABLED=1
   other-modules:
       Paths_sharesafe_lib
   default-language: Haskell2010
