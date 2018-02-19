@@ -48,21 +48,21 @@ sharesafe pvss new --secret encryption.key --threshold 2 --participant rick.pub 
 
 This command will create:
 
-* a share secret and will convert it into a valid ChaChaPoly1305 encryption key `encryption.key` (see below);
-* for every participant: an associated shared file:
-  * rick.share: rick's share, encrypted with its public key (only rick's private key can unlock the share);
-  * morty.share: morty's share, encrypted with its public key (only morty's private key can unlock the share);
-  * jerry.share: jerry's share, encrypted with its public key (only jerry's private key can unlock the share);
+* a share secret and will convert it into a **ChaChaPoly1305** compatible encryption key `encryption.key` (see below);
+* for every participant a `.share` file is created:
+  * `rick.share`: rick's share, encrypted with its public key (only rick's private key can unlock the share);
+  * `morty.share`: morty's share, encrypted with its public key (only morty's private key can unlock the share);
+  * `jerry.share`: jerry's share, encrypted with its public key (only jerry's private key can unlock the share);
 
 > the `.share` files can safely be shared over any support, secured or not.
 > They are encrypted a way only the owner of the private key can open it.
 
-In this command, the `threshold` is the minimum number of _unlock key_ needed
+In this command, the `threshold` is the minimum number of _opened shares_ needed
 to recover the `encryption.key`. See next command.
 
 #### Recover a secret
 
-To recover a shared secret, we need _n_ participants (`threshold`) to unlock
+To recover a shared secret, we need _n_ participants (`threshold`) to open
 their `.share`.
 
 ```shell
