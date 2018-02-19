@@ -46,7 +46,7 @@ no need for the private keys nor the passwords**.
 sharesafe pvss new --secret encryption.key --threshold 2 --participant rick.pub  --participant morty.pub --participant jerry.pub
 ```
 
-This commend will create:
+This command will create:
 
 * a share secret and will convert it into a valid ChaChaPoly1305 encryption key `encryption.key` (see below);
 * for every participant: an associated shared file:
