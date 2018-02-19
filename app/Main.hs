@@ -267,10 +267,10 @@ withDataDirectory f = do
 pvssSubProgram :: OptionDesc (IO ()) ()
 pvssSubProgram = do
   description "PVSS operations"
-  pvssNewShareSubProgram
-  pvssVerifyShareSubProgram
-  pvssOpenShareSubProgram
   pvssRecoverSubProgram
+  pvssOpenShareSubProgram
+  pvssVerifyShareSubProgram
+  pvssNewShareSubProgram
 
 pvssNewShareSubProgram :: OptionDesc (IO ()) ()
 pvssNewShareSubProgram = command "new" $ do
