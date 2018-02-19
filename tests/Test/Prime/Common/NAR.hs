@@ -40,7 +40,7 @@ testFromToNar = Property "packNar .| unpackNar === id" . func
          -> obj
          -> PropertyCheck
     func proxy a =
-      a === runConduitPure (packNar a .| narSinkC .| narSourceC .| unpackNar proxy)
+      Just a === runConduitPure (packNar a .| narSinkC .| narSourceC .| unpackNar proxy)
 
 tests :: Test
 tests = Group "NAR"
