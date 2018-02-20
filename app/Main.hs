@@ -99,7 +99,7 @@ decryptWithLocalStore :: OptionDesc (IO ()) ()
 decryptWithLocalStore = do
     description "decrypt a share"
 
-    pkssf <- flagMany $ flagParam (FlagShort 'p' <> FlagLong "participant" <> FlagDescription "name of the participant from contact list")
+    pkssf <- flagMany $ flagParam (FlagShort 'p' <> FlagLong "participant" <> FlagDescription "name of the participant from contact list or file to the key")
                                   (FlagRequired Right)
     inf     <-         flagParam (FlagShort 'i' <> FlagLong "input" <> FlagDescription "Where to read the file to share (default STDIN)")
                                  (FlagRequired (Right . fromString))
@@ -112,9 +112,12 @@ decryptWithLocalStore = do
         hSetBuffering stdout NoBuffering
         echoing <- hGetEcho stdin
         hSetEcho stdin False
-        apks <- forM pkss $ \contact -> withContactKey contact $ \pk pppks -> do
+        apks <- forM pkss $ \contact -> do
+                    b <- doesFileExist contact
+                    (pk, pppks) <- if b
+                        then withFile (fromString contact) ReadMode $ \h -> withPPKeyPair h $ curry pure
+                        else withContactKey contact $ curry pure
                     putStr $ fromList $ "password for " <> contact <> ": "
-                    -- let pwd = mempty
                     pwd <- either error id . parsePasswordParam <$> hGetLine stdin
                     putStrLn ""
                     flip KeyPair pk <$> throwCryptoErrorIO (recover pwd pppks)
