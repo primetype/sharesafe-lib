@@ -41,7 +41,7 @@ sharesafe key export-public --input rick.key --output rick.pub
 
 #### Kitchen Sink command
 
-Now, you can create key, you can create share package.
+Now that you can create key: you can create share package.
 
 ```shell
 # encrypt a file and store all the details to retrieve the secret in the
