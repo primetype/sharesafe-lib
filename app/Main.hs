@@ -67,7 +67,7 @@ listLocalStoreKeys = do
 encryptWithLocalStore :: OptionDesc (IO ()) ()
 encryptWithLocalStore = do
     description "encrypt a file"
-    pkssf <- flagMany $ flagParam (FlagShort 'p' <> FlagLong "participant" <> FlagDescription "name of the participant from contact list")
+    pkssf <- flagMany $ flagParam (FlagShort 'p' <> FlagLong "participant" <> FlagDescription "name of the participant from contact list or a file to the key pair")
                                   (FlagRequired Right)
     thresholdf <-      flagParam (FlagShort 't' <> FlagLong "threshold" <> FlagDescription "Threshold to retrive the secrets (default: 1)")
                                  (FlagRequired readEither)
@@ -80,7 +80,13 @@ encryptWithLocalStore = do
         let threshold = fromMaybe 1 $ toParam thresholdf
         -- retrieve the keys
         let pkss = toParam pkssf
-        apks <- forM pkss $ \contact -> withContactKey contact $ \key _-> pure key
+
+        apks <- forM pkss $ \contact -> do
+                    b <- doesFileExist contact
+                    if b
+                        then withFile (fromString contact) ReadMode $ \h -> withPublicKey h pure
+                        else withContactKey contact $ \key _ -> pure key
+
         unless (Prelude.length apks >= fromInteger threshold) $
             error "threshold is higher than number of participants"
 
