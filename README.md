@@ -33,9 +33,30 @@ The first thing you need to start sharing secrets is to generate key pairs:
 ```shell
 # create a password protected secret key and public key
 sharesafe key new --password "c-137" --output rick.key
+sharesafe key new --password "Jessica" --output morty.key
+sharesafe key new --output jerry.key # no password... risky...
 # export your public key into a separate file
 sharesafe key export-public --input rick.key --output rick.pub
 ```
+
+#### Kitchen Sink command
+
+Now, you can create key, you can create share package.
+
+```shell
+# encrypt a file and store all the details to retrieve the secret in the
+# metadata of the output. You can set the public key or the key pair (only
+# the public key is necessary):
+sharesafe encrypt --participant rick.pub -p morty.key -p jerry.pub -t 2 -i citadel.blueprint -o secret.sharepkg
+
+# decrypt a sharepkg is easy. We need the keypair here. The password to unlock
+# the private key will be asked without echoing to the terminal.
+sharesafe decrypt -p rick.key -p morty.key -i secret.sharepkg -o citadel.blueprint
+rick password: ******
+morty password: ********
+```
+
+### Advanced
 
 #### create a secret
 
